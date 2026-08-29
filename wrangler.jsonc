@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chelsea-news-korean",
+  "main": "worker.js",
+  "compatibility_date": "2026-08-28",
+  "assets": {
+    "directory": "."
+  }
+}
