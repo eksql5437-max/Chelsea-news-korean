@@ -1,5 +1,5 @@
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname === "/api/news") {
@@ -10,6 +10,6 @@ export default {
       });
     }
 
-    return new Response("Chelsea News Korean API");
+    return env.ASSETS.fetch(request);
   }
 };
