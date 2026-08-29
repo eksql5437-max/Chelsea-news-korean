@@ -6,7 +6,11 @@ export default {
       try {
         const rssUrl = "https://feeds.bbci.co.uk/sport/football/rss.xml";
 
-        const response = await fetch(rssUrl);
+        const response = await fetch(rssUrl, {
+          headers: {
+            "User-Agent": "Chelsea-News-Korean/1.0"
+          }
+        });
 
         if (!response.ok) {
           throw new Error(`RSS request failed: ${response.status}`);
@@ -14,22 +18,29 @@ export default {
 
         const xml = await response.text();
 
-        const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)]
-          .slice(0, 30)
-          .map(match => {
+        const matches = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)];
+
+        const news = matches
+          .map((match) => {
             const item = match[1];
 
             const getValue = (tag) => {
-              const result = item.match(
-                new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`)
+              const regex = new RegExp(
+                `<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`,
+                "i"
               );
 
-              return result
-                ? result[1]
-                    .replace(/<!\[CDATA\[/g, "")
-                    .replace(/\]\]>/g, "")
-                    .trim()
-                : "";
+              const result = item.match(regex);
+
+              if (!result) {
+                return "";
+              }
+
+              return result[1]
+                .replace(/<!\[CDATA\[/gi, "")
+                .replace(/\]\]>/gi, "")
+                .replace(/<[^>]+>/g, "")
+                .trim();
             };
 
             return {
@@ -39,16 +50,21 @@ export default {
               pubDate: getValue("pubDate")
             };
           })
-          .filter(news =>
-            news.title.toLowerCase().includes("chelsea") ||
-            news.description.toLowerCase().includes("chelsea")
-          );
+          .filter((item) => {
+            const text = `${item.title} ${item.description}`.toLowerCase();
+
+            return (
+              text.includes("chelsea") ||
+              text.includes("chelsea fc")
+            );
+          });
 
         return Response.json({
           success: true,
           source: "BBC Sport",
-          count: items.length,
-          news: items
+          fetched: matches.length,
+          count: news.length,
+          news
         });
 
       } catch (error) {
@@ -57,7 +73,9 @@ export default {
             success: false,
             error: error.message
           },
-          { status: 500 }
+          {
+            status: 500
+          }
         );
       }
     }
